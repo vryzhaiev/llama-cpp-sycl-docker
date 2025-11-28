@@ -56,6 +56,7 @@ RUN . /etc/os-release \
     intel-level-zero-gpu \
     libze1 \
     intel-oneapi-runtime-libs \
+    intel-oneapi-common-vars \
     && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
