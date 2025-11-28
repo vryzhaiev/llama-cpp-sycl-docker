@@ -37,7 +37,8 @@ FROM ubuntu:noble
 
 ARG DEBIAN_FRONTEND=noninteractive
 
-RUN apt-get update \
+RUN . /etc/os-release \
+    && apt-get update \
     && apt-get install --no-install-recommends -y \
     curl \
     gpg \
@@ -46,23 +47,19 @@ RUN apt-get update \
     | gpg --dearmor -o /usr/share/keyrings/oneapi.gpg \
     && echo "deb [signed-by=/usr/share/keyrings/oneapi.gpg] https://apt.repos.intel.com/oneapi all main" \
     | tee /etc/apt/sources.list.d/oneapi.list \
+    && curl -fsSL "https://keyserver.ubuntu.com/pks/lookup?op=get&search=0x0C0E6AF955CE463C03FC51574D098D70AFBE5E1F" \
+    | gpg --dearmor -o /usr/share/keyrings/intel-graphics.gpg \
+    && echo "deb [signed-by=/usr/share/keyrings/intel-graphics.gpg] https://ppa.launchpadcontent.net/kobuk-team/intel-graphics/${ID} ${VERSION_CODENAME} main" \
+    | tee /etc/apt/sources.list.d/intel-graphics.list \
     && apt-get update \
     && apt-get install --no-install-recommends -y \
     intel-oneapi-runtime-libs \
+    intel-oneapi-umf \
     libze1 \
     ocl-icd-libopencl1 \
+    libze-intel-gpu1 \
+    intel-opencl-icd \
     && rm -rf /var/lib/apt/lists/*
-
-WORKDIR /tmp/drivers
-
-# Use specific versions from the release doc (https://github.com/intel/compute-runtime/releases/tag/25.44.36015.5)
-RUN curl -fsSLO https://github.com/intel/intel-graphics-compiler/releases/download/v2.22.2/intel-igc-core-2_2.22.2+20121_amd64.deb \
-    && curl -fsSLO https://github.com/intel/intel-graphics-compiler/releases/download/v2.22.2/intel-igc-opencl-2_2.22.2+20121_amd64.deb \
-    && curl -fsSLO https://github.com/intel/compute-runtime/releases/download/25.44.36015.5/intel-opencl-icd_25.44.36015.5-0_amd64.deb \
-    && curl -fsSLO https://github.com/intel/compute-runtime/releases/download/25.44.36015.5/libigdgmm12_22.8.2_amd64.deb \
-    && curl -fsSLO https://github.com/intel/compute-runtime/releases/download/25.44.36015.5/libze-intel-gpu1_25.44.36015.5-0_amd64.deb \
-    && dpkg -i *.deb \
-    && rm *.deb
 
 WORKDIR /app
 
@@ -71,7 +68,7 @@ COPY entrypoint.sh /app/entrypoint.sh
 
 RUN mkdir /models
 
-ENV LD_LIBRARY_PATH="/app:/opt/intel/oneapi/redist/lib:/usr/lib/x86_64-linux-gnu"
+ENV LD_LIBRARY_PATH="/app:/opt/intel/oneapi/redist/lib:/opt/intel/oneapi/umf/latest/lib:/usr/lib/x86_64-linux-gnu"
 ENV LC_ALL=C.utf8
 ENV ZES_ENABLE_SYSMAN=1
 ENV ONEAPI_DEVICE_SELECTOR=level_zero:0
