@@ -17,8 +17,7 @@ RUN apt-get update \
     | tee /etc/apt/sources.list.d/oneapi.list \
     && apt-get update \
     && apt-get install --no-install-recommends -y \
-    intel-oneapi-compiler-dpcpp-cpp-and-cpp-classic \
-    intel-oneapi-dpcpp-ct \
+    intel-oneapi-compiler-dpcpp-cpp \
     intel-oneapi-mkl-devel \
     && rm -rf /var/lib/apt/lists/*
 
