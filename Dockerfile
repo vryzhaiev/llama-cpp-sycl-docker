@@ -8,6 +8,7 @@ RUN apt-get update \
     cmake \
     git \
     curl \
+    libcurl4-openssl-dev \
     gpg \
     ca-certificates \
     && curl -fsSL https://apt.repos.intel.com/intel-gpg-keys/GPG-PUB-KEY-INTEL-SW-PRODUCTS.PUB \
