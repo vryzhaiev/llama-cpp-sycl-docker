@@ -56,16 +56,16 @@ RUN . /etc/os-release \
     intel-level-zero-gpu \
     libze1 \
     intel-oneapi-runtime-libs \
-    intel-oneapi-common-vars \
     && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
 
-COPY --from=builder /build/build/bin/llama-server /app/llama-server
+COPY --from=builder /build/build/bin/* /app/
 COPY entrypoint.sh /app/entrypoint.sh
 
 RUN mkdir /models
 
+ENV LD_LIBRARY_PATH="/app:/opt/intel/oneapi/redist/lib:/usr/lib/x86_64-linux-gnu"
 ENV LC_ALL=C.utf8
 ENV ZES_ENABLE_SYSMAN=1
 ENV ONEAPI_DEVICE_SELECTOR=level_zero:0
