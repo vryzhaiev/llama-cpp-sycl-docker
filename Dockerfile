@@ -44,7 +44,7 @@ RUN . /etc/os-release \
     ca-certificates \
     && curl -fsSL https://repositories.intel.com/gpu/intel-graphics.key \
     | gpg --dearmor -o /usr/share/keyrings/intel-graphics.gpg \
-    && echo "deb [arch=amd64 signed-by=/usr/share/keyrings/intel-graphics.gpg] https://repositories.intel.com/gpu/${ID} ${VERSION_CODENAME} client" \
+    && echo "deb [arch=amd64 signed-by=/usr/share/keyrings/intel-graphics.gpg] https://repositories.intel.com/gpu/${ID} ${VERSION_CODENAME} rolling" \
     | tee /etc/apt/sources.list.d/intel-graphics.list \
     && curl -fsSL https://apt.repos.intel.com/intel-gpg-keys/GPG-PUB-KEY-INTEL-SW-PRODUCTS.PUB \
     | gpg --dearmor -o /usr/share/keyrings/oneapi.gpg \
