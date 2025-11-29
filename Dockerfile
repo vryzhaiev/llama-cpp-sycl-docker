@@ -27,6 +27,7 @@ RUN git clone --depth 1 https://github.com/ggml-org/llama.cpp.git . \
     && . /opt/intel/oneapi/setvars.sh \
     && cmake -B build \
     -DGGML_SYCL=ON \
+    -DGGML_SYCL_F16=ON \
     -DCMAKE_C_COMPILER=icx \
     -DCMAKE_CXX_COMPILER=icpx \
     -DCMAKE_BUILD_TYPE=Release \
