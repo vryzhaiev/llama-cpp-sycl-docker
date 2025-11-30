@@ -28,6 +28,7 @@ RUN git clone --depth 1 https://github.com/ggml-org/llama.cpp.git . \
     && cmake -B build \
     -DGGML_NATIVE=OFF \
     -DGGML_SYCL=ON \
+    -DGGML_SYCL_F16=ON \
     -DCMAKE_C_COMPILER=icx \
     -DCMAKE_CXX_COMPILER=icpx \
     -DGGML_BACKEND_DL=ON \
