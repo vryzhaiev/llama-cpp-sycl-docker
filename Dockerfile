@@ -57,7 +57,6 @@ RUN . /etc/os-release \
     && apt-get update \
     && apt-get install --no-install-recommends -y \
     intel-oneapi-runtime-libs \
-    intel-oneapi-openmp \
     intel-oneapi-umf \
     libze1 \
     ocl-icd-libopencl1 \
@@ -72,7 +71,7 @@ COPY entrypoint.sh /app/entrypoint.sh
 
 RUN mkdir /models
 
-ENV LD_LIBRARY_PATH="/app:/opt/intel/oneapi/redist/lib:/opt/intel/oneapi/compiler/latest/lib:/opt/intel/oneapi/umf/latest/lib:/usr/lib/x86_64-linux-gnu"
+ENV LD_LIBRARY_PATH="/app:/opt/intel/oneapi/redist/lib:/opt/intel/oneapi/umf/latest/lib:/usr/lib/x86_64-linux-gnu"
 ENV LC_ALL=C.utf8
 ENV ZES_ENABLE_SYSMAN=1
 ENV ONEAPI_DEVICE_SELECTOR=level_zero:0
@@ -81,4 +80,4 @@ EXPOSE 8080
 
 ENTRYPOINT ["/app/entrypoint.sh"]
 
-CMD ["/app/llama-server", "--host", "0.0.0.0", "--port", "8080"]
+CMD ["/app/llama-server"]
