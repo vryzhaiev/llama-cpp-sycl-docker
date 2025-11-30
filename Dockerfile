@@ -26,7 +26,9 @@ WORKDIR /build
 RUN git clone --depth 1 https://github.com/ggml-org/llama.cpp.git . \
     && . /opt/intel/oneapi/setvars.sh \
     # Force the kernel to be exported so the JIT compiler can find it
-    && sed -i 's/^static void scale_f32_sycl/extern "C" void scale_f32_sycl/g' ggml/src/ggml-sycl/ggml-sycl.cpp \
+    && sed -i 's/static[[:space:]]\+.*void[[:space:]]\+scale_f32_sycl/extern "C" void scale_f32_sycl/' ggml/src/ggml-sycl/ggml-sycl.cpp \
+    && echo "Verifying patch..." \
+    && grep 'extern "C" void scale_f32_sycl' ggml/src/ggml-sycl/ggml-sycl.cpp \
     && cmake -B build \
     -DGGML_SYCL=ON \
     -DCMAKE_C_COMPILER=icx \
