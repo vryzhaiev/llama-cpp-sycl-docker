@@ -42,7 +42,7 @@ jobs:
         with:
           context: ./llama_source 
           file: ./llama_source/.devops/intel.Dockerfile 
-          target: server
+          target: full
           push: true
           tags: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest-official-fp16
           build-args:
