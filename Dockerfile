@@ -29,9 +29,10 @@ RUN git clone --depth 1 https://github.com/ggml-org/llama.cpp.git . \
     -DGGML_NATIVE=OFF \
     -DGGML_SYCL=ON \
     -DGGML_SYCL_F16=ON \
+    -DGGML_BACKEND_DL=ON \
+    -DGGML_CPU_ALL_VARIANTS=ON \
     -DCMAKE_C_COMPILER=icx \
     -DCMAKE_CXX_COMPILER=icpx \
-    -DGGML_BACKEND_DL=ON \
     && cmake --build build --config Release -j $(nproc)
 
 FROM ubuntu:noble
@@ -60,6 +61,7 @@ RUN . /etc/os-release \
     ocl-icd-libopencl1 \
     libze-intel-gpu1 \
     intel-opencl-icd \
+    libgomp1 \
     && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
