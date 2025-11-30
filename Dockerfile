@@ -31,6 +31,7 @@ RUN git clone --depth 1 https://github.com/ggml-org/llama.cpp.git . \
     -DGGML_SYCL_F16=ON \
     -DGGML_BACKEND_DL=ON \
     -DGGML_CPU_ALL_VARIANTS=ON \
+    -DLLAMA_BUILD_TESTS=OFF \
     -DCMAKE_C_COMPILER=icx \
     -DCMAKE_CXX_COMPILER=icpx \
     && cmake --build build --config Release -j $(nproc)
@@ -61,17 +62,18 @@ RUN . /etc/os-release \
     ocl-icd-libopencl1 \
     libze-intel-gpu1 \
     intel-opencl-icd \
-    libgomp1 \
+    intel-oneapi-openmp \
     && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
 
-COPY --from=builder /build/build/bin/* /app/
+COPY --from=builder /build/build/bin/llama-* /app/
+COPY --from=builder /build/build/bin/*.so* /app/lib/
 COPY entrypoint.sh /app/entrypoint.sh
 
 RUN mkdir /models
 
-ENV LD_LIBRARY_PATH="/app:/opt/intel/oneapi/redist/lib:/opt/intel/oneapi/umf/latest/lib:/usr/lib/x86_64-linux-gnu"
+ENV LD_LIBRARY_PATH="/app/lib:/opt/intel/oneapi/redist/lib:/opt/intel/oneapi/compiler/latest/lib:/opt/intel/oneapi/umf/latest/lib:/usr/lib/x86_64-linux-gnu"
 ENV LC_ALL=C.utf8
 ENV ZES_ENABLE_SYSMAN=1
 ENV ONEAPI_DEVICE_SELECTOR=level_zero:0
