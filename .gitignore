@@ -1,3 +1,7 @@
 docker-compose.yaml
 *.log
 .DS_Store
+*.swp
+*.bak
+*venv
+*.py
