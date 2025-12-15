@@ -11,6 +11,7 @@ RUN apt-get update \
 WORKDIR /build
 
 RUN git clone --depth 1 https://github.com/ggml-org/llama.cpp.git . \
+    && echo "Building llama.cpp commit: $(git log -1 --format='%H')" \
     && cmake -B build \
     -DGGML_NATIVE=OFF \
     -DGGML_SYCL=ON \
