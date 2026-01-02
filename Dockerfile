@@ -1,7 +1,6 @@
-ARG ONEAPI_VERSION=2025.3.2-0-devel-ubuntu24.04
-ARG DEBIAN_FRONTEND=noninteractive
+FROM intel/deep-learning-essentials:2025.3.2-0-devel-ubuntu24.04 AS base
 
-FROM intel/deep-learning-essentials:${ONEAPI_VERSION} AS builder
+FROM base AS builder
 
 RUN apt-get update \
     && apt-get install --no-install-recommends -y \
@@ -23,7 +22,7 @@ RUN git clone --depth 1 https://github.com/ggml-org/llama.cpp.git . \
     -DCMAKE_CXX_COMPILER=icpx \
     && cmake --build build --config Release -j $(nproc)
 
-FROM intel/deep-learning-essentials:${ONEAPI_VERSION}
+FROM base AS runner
 
 # Update Level Zero and OpenCL to latest
 RUN . /etc/os-release \
