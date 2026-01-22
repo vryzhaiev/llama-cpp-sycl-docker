@@ -9,6 +9,9 @@ RUN apt-get update \
 
 WORKDIR /build
 
+# Llama.cpp cache invalidation, happens only when there is a new commit
+ARG LLAMA_CPP_COMMIT=unknown
+
 RUN git clone --depth 1 https://github.com/ggml-org/llama.cpp.git . \
     && echo "Building llama.cpp commit: $(git log -1 --format='%H')" \
     && cmake -B build \
@@ -23,6 +26,10 @@ RUN git clone --depth 1 https://github.com/ggml-org/llama.cpp.git . \
     && cmake --build build --config Release -j $(nproc)
 
 FROM base AS runner
+
+# Runner cache invalidation, happens only when the cache version is incremented
+ARG RUNNER_CACHE_VERSION
+RUN if [ -n "$RUNNER_CACHE_VERSION" ]; then echo "Runner cache version: $RUNNER_CACHE_VERSION"; fi
 
 # Update Level Zero and OpenCL to latest
 RUN . /etc/os-release \

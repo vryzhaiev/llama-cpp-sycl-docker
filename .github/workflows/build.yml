@@ -34,6 +34,13 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
+      - name: Get latest llama.cpp commit
+        id: llama-commit
+        run: |
+          COMMIT=$(git ls-remote https://github.com/ggml-org/llama.cpp.git HEAD | cut -f1)
+          echo "commit=$COMMIT" >> $GITHUB_OUTPUT
+          echo "Latest llama.cpp commit: $COMMIT"
+
       - name: Build and push Docker image
         uses: docker/build-push-action@v5
         with:
@@ -42,3 +49,6 @@ jobs:
           tags: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
           cache-from: type=gha
           cache-to: type=gha,mode=min
+          build-args: |
+            LLAMA_CPP_COMMIT=${{ steps.llama-commit.outputs.commit }}
+            RUNNER_CACHE_VERSION=v1
