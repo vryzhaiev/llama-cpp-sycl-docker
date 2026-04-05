@@ -1,4 +1,4 @@
-FROM intel/deep-learning-essentials:2025.3.2-0-devel-ubuntu24.04 AS base
+FROM intel/deep-learning-essentials:2025.3.3-0-devel-ubuntu24.04 AS base
 
 FROM base AS builder
 
