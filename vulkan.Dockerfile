@@ -10,7 +10,7 @@ FROM base AS builder
 # Install build tools and dependencies
 RUN apt-get update \
     && apt-get install -y git build-essential cmake wget xz-utils libssl-dev curl \
-    libxcb-xinput0 libxcb-xinerama0 libxcb-cursor-dev libvulkan-dev glslc \
+    libxcb-xinput0 libxcb-xinerama0 libxcb-cursor-dev libvulkan-dev glslc spirv-headers \
     && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /build

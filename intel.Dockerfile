@@ -37,12 +37,7 @@ ARG RUNNER_CACHE_VERSION
 RUN if [ -n "$RUNNER_CACHE_VERSION" ]; then echo "Runner cache version: $RUNNER_CACHE_VERSION"; fi
 
 # Update Level Zero and OpenCL to latest
-RUN . /etc/os-release \
-    && curl -fsSL "https://keyserver.ubuntu.com/pks/lookup?op=get&search=0x0C0E6AF955CE463C03FC51574D098D70AFBE5E1F" \
-    | gpg --dearmor -o /usr/share/keyrings/intel-graphics-archive-keyring-kobuk.gpg \
-    && echo "deb [signed-by=/usr/share/keyrings/intel-graphics-archive-keyring-kobuk.gpg] https://ppa.launchpadcontent.net/kobuk-team/intel-graphics/${ID} ${VERSION_CODENAME} main" \
-    | tee /etc/apt/sources.list.d/intel-graphics.list \
-    && apt-get update \
+RUN apt-get update \
     && apt-get install --upgrade --no-install-recommends -y \
     libze1 \
     libze-dev \
