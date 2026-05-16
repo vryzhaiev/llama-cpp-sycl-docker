@@ -1,4 +1,4 @@
-FROM ubuntu:26.04 AS base
+FROM ubuntu:resolute AS base
 
 # Make sure the builder and runner have the exact same versions
 RUN apt-get update \
