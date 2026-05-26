@@ -11,7 +11,7 @@ on:
 
 env:
   REGISTRY: ghcr.io
-  IMAGE_NAME: ${{ github.repository }}
+  IMAGE_NAME: ${{ github.repository_owner }}/llama.cpp
 
 jobs:
   build-and-push:
@@ -23,9 +23,9 @@ jobs:
       matrix:
         include:
           - tag: latest-intel
-            fp16: "OFF"
-          - tag: latest-intel-fp16
-            fp16: "ON"
+            f16: "OFF"
+          - tag: latest-intel-f16
+            f16: "ON"
 
     steps:
       - name: Checkout repository
@@ -60,4 +60,4 @@ jobs:
           build-args: |
             LLAMA_CPP_COMMIT=${{ steps.llama-commit.outputs.commit }}
             RUNNER_CACHE_VERSION=v1
-            GGML_SYCL_F16=${{ matrix.fp16 }}
+            GGML_SYCL_F16=${{ matrix.f16 }}
