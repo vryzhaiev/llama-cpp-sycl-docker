@@ -7,6 +7,9 @@ on:
     paths:
       - '.github/workflows/build-vulkan.yml'
       - 'vulkan.Dockerfile'
+  schedule:
+    # Weekly refresh of the base and runner stages
+    - cron: '0 3 * * 0'
   workflow_dispatch:
 
 env:
@@ -48,8 +51,9 @@ jobs:
           file: ./vulkan.Dockerfile
           push: true
           tags: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest-vulkan
+          # On the weekly schedule, ignore cache for the base and runner stages
+          no-cache-filters: ${{ github.event_name == 'schedule' && 'base,runner' || '' }}
           cache-from: type=gha,scope=vulkan
           cache-to: type=gha,mode=min,scope=vulkan
           build-args: |
             LLAMA_CPP_COMMIT=${{ steps.llama-commit.outputs.commit }}
-            RUNNER_CACHE_VERSION=v1

@@ -7,6 +7,9 @@ on:
     paths:
       - '.github/workflows/build-intel.yml'
       - 'intel.Dockerfile'
+  schedule:
+    # Weekly refresh of the base layer
+    - cron: '0 4 * * 0'
   workflow_dispatch:
 
 env:
@@ -26,6 +29,9 @@ jobs:
             fp16: "OFF"
           - tag: latest-intel-fp16
             fp16: "ON"
+          - tag: latest-intel-arl-fp16
+            fp16: "ON"
+            device_arch: "arl_h"
 
     steps:
       - name: Checkout repository
@@ -55,9 +61,11 @@ jobs:
           file: ./intel.Dockerfile 
           push: true
           tags: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ matrix.tag }}
+          # On the weekly schedule, ignore cache for the base stage
+          no-cache-filters: ${{ github.event_name == 'schedule' && 'base' || '' }}
           cache-from: type=gha,scope=${{ matrix.tag }}
           cache-to: type=gha,mode=max,scope=${{ matrix.tag }}
           build-args: |
             LLAMA_CPP_COMMIT=${{ steps.llama-commit.outputs.commit }}
-            RUNNER_CACHE_VERSION=v1
             GGML_SYCL_F16=${{ matrix.fp16 }}
+            GGML_SYCL_DEVICE_ARCH=${{ matrix.device_arch }}

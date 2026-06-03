@@ -30,10 +30,6 @@ RUN git clone --depth 1 https://github.com/ggml-org/llama.cpp.git . \
 
 FROM base AS runner
 
-# Runner cache invalidation, happens only when the cache version is incremented
-ARG RUNNER_CACHE_VERSION
-RUN if [ -n "$RUNNER_CACHE_VERSION" ]; then echo "Runner cache version: $RUNNER_CACHE_VERSION"; fi
-
 RUN apt-get update \
     && apt-get install -y libgomp1 curl libvulkan1 mesa-vulkan-drivers \
     libglvnd0 libgl1 libglx0 libegl1 libgles2 \

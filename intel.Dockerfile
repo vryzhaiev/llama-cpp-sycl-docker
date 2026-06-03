@@ -1,5 +1,15 @@
 FROM intel/deep-learning-essentials:2026.0.0-devel-ubuntu24.04 AS base
 
+# Update Level Zero and OpenCL to latest, and install the offline compiler
+RUN apt-get update \
+    && apt-get install --upgrade --no-install-recommends -y \
+    libze1 \
+    libze-dev \
+    libze-intel-gpu1 \
+    intel-opencl-icd \
+    intel-ocloc \
+    && rm -rf /var/lib/apt/lists/*
+
 FROM base AS builder
 
 RUN apt-get update \
@@ -15,6 +25,11 @@ ARG LLAMA_CPP_COMMIT=unknown
 # FP16 support is disabled by default, can be enabled by passing GGML_SYCL_F16=ON build arg
 ARG GGML_SYCL_F16=OFF
 
+# Optional AOT target arch. When empty, the flag is omitted entirely (generic/JIT build).
+# The list of supported architectures can be found in the table:
+# https://github.com/intel/llvm/blob/sycl/sycl/doc/design/OffloadDesign.md#--offload-arch
+ARG GGML_SYCL_DEVICE_ARCH=
+
 # Build with SYCL Graph support (disabled at runtime by default, enable with GGML_SYCL_DISABLE_GRAPH=0)
 RUN git clone --depth 1 https://github.com/ggml-org/llama.cpp.git . \
     && echo "Building llama.cpp commit: $(git log -1 --format='%H')" \
@@ -22,6 +37,7 @@ RUN git clone --depth 1 https://github.com/ggml-org/llama.cpp.git . \
     -DGGML_NATIVE=OFF \
     -DGGML_SYCL=ON \
     -DGGML_SYCL_F16=${GGML_SYCL_F16} \
+    ${GGML_SYCL_DEVICE_ARCH:+-DGGML_SYCL_DEVICE_ARCH=${GGML_SYCL_DEVICE_ARCH}} \
     -DGGML_SYCL_GRAPH=ON \
     -DGGML_BACKEND_DL=ON \
     -DGGML_CPU_ALL_VARIANTS=ON \
@@ -31,20 +47,6 @@ RUN git clone --depth 1 https://github.com/ggml-org/llama.cpp.git . \
     && cmake --build build --config Release -j $(nproc)
 
 FROM base AS runner
-
-# Runner cache invalidation, happens only when the cache version is incremented
-ARG RUNNER_CACHE_VERSION
-RUN if [ -n "$RUNNER_CACHE_VERSION" ]; then echo "Runner cache version: $RUNNER_CACHE_VERSION"; fi
-
-# Update Level Zero and OpenCL to latest
-RUN apt-get update \
-    && apt-get install --upgrade --no-install-recommends -y \
-    libze1 \
-    libze-dev \
-    libze-intel-gpu1 \
-    intel-opencl-icd \
-    intel-ocloc \
-    && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
 
