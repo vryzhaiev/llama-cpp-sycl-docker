@@ -43,6 +43,7 @@ RUN apt-get update \
     libze-dev \
     libze-intel-gpu1 \
     intel-opencl-icd \
+    intel-ocloc \
     && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
