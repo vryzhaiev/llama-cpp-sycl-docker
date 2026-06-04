@@ -24,6 +24,7 @@ ARG ONEAPI_VERSION
 RUN apt-get update \
     && apt-get install --no-install-recommends -y \
     libssl-dev \
+    npm \
     && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /build
