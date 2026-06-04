@@ -1,6 +1,6 @@
 FROM intel/deep-learning-essentials:2026.0.0-devel-ubuntu24.04 AS base
 
-# Update Level Zero and OpenCL to latest, and install the offline compiler
+# Update Level Zero and OpenCL to latest, install dependencies
 RUN apt-get update \
     && apt-get install --upgrade --no-install-recommends -y \
     libze1 \
@@ -8,6 +8,7 @@ RUN apt-get update \
     libze-intel-gpu1 \
     intel-opencl-icd \
     intel-ocloc \
+    intel-oneapi-dnnl-devel \
     && rm -rf /var/lib/apt/lists/*
 
 FROM base AS builder
