@@ -9,7 +9,7 @@ on:
       - 'vulkan.Dockerfile'
   schedule:
     # Weekly refresh of the base and runner stages
-    - cron: '0 3 * * 0'
+    - cron: '0 4 * * 0'
   workflow_dispatch:
 
 env:
