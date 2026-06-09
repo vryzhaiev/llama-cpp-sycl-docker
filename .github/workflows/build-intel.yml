@@ -7,10 +7,16 @@ on:
     paths:
       - '.github/workflows/build-intel.yml'
       - 'intel.Dockerfile'
-  schedule:
+  # Schedule temporarily disabled
+  #schedule:
     # Weekly refresh of the base layer
-    - cron: '0 4 * * 0'
+    #- cron: '0 4 * * 0'
   workflow_dispatch:
+    inputs:
+      commit:
+        description: 'Full llama.cpp commit SHA to build (empty = latest master HEAD).'
+        required: false
+        default: ''
 
 env:
   REGISTRY: ghcr.io
@@ -47,12 +53,23 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
-      - name: Get latest llama.cpp commit
-        id: llama-commit
+      - name: Resolve build config
+        id: cfg
+        env:
+          COMMIT_INPUT: ${{ inputs.commit }}
+          MATRIX_TAG: ${{ matrix.tag }}
         run: |
-          COMMIT=$(git ls-remote https://github.com/ggml-org/llama.cpp.git HEAD | cut -f1)
-          echo "commit=$COMMIT" >> $GITHUB_OUTPUT
-          echo "Latest llama.cpp commit: $COMMIT"
+          if [ -n "$COMMIT_INPUT" ]; then
+            COMMIT="$COMMIT_INPUT"
+            TAG="${COMMIT:0:7}-${MATRIX_TAG#latest-}"
+            echo "Pinned build: commit=$COMMIT tag=$TAG"
+          else
+            COMMIT=""
+            TAG="$MATRIX_TAG"
+            echo "Latest build: tag=$TAG (shallow HEAD)"
+          fi
+          echo "commit=$COMMIT" >> "$GITHUB_OUTPUT"
+          echo "tag=$TAG" >> "$GITHUB_OUTPUT"
 
       - name: Build and push Docker image
         uses: docker/build-push-action@v5
@@ -60,12 +77,12 @@ jobs:
           context: .
           file: ./intel.Dockerfile 
           push: true
-          tags: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ matrix.tag }}
-          # On the weekly schedule, ignore cache for the base stage
-          no-cache-filters: ${{ github.event_name == 'schedule' && 'base' || '' }}
-          cache-from: type=gha,scope=${{ matrix.tag }}
-          cache-to: type=gha,mode=max,scope=${{ matrix.tag }}
+          tags: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ steps.cfg.outputs.tag }}
+          # Caches temporarily disabled
+          #no-cache-filters: ${{ github.event_name == 'schedule' && 'base' || '' }}
+          #cache-from: type=gha,scope=${{ matrix.tag }}
+          #cache-to: type=gha,mode=max,scope=${{ matrix.tag }}
           build-args: |
-            LLAMA_CPP_COMMIT=${{ steps.llama-commit.outputs.commit }}
+            LLAMA_CPP_COMMIT=${{ steps.cfg.outputs.commit }}
             GGML_SYCL_F16=${{ matrix.fp16 }}
             GGML_SYCL_DEVICE_ARCH=${{ matrix.device_arch }}

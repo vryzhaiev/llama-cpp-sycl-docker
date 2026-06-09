@@ -34,8 +34,9 @@ RUN curl -fsSL https://deb.nodesource.com/gpgkey/nodesource-repo.gpg.key \
 
 WORKDIR /build
 
-# Llama.cpp cache invalidation, happens only when there is a new commit
-ARG LLAMA_CPP_COMMIT=unknown
+# Optional pinned commit. Empty (default) shallow-clones the latest master HEAD;
+# a SHA triggers a full clone + checkout of that commit. Also acts as the cache key.
+ARG LLAMA_CPP_COMMIT=
 
 # FP16 support is disabled by default, can be enabled by passing GGML_SYCL_F16=ON build arg
 ARG GGML_SYCL_F16=OFF
@@ -46,7 +47,12 @@ ARG GGML_SYCL_F16=OFF
 ARG GGML_SYCL_DEVICE_ARCH=
 
 # Build with SYCL Graph support (disabled at runtime by default, enable with GGML_SYCL_DISABLE_GRAPH=0)
-RUN git clone --depth 1 https://github.com/ggml-org/llama.cpp.git . \
+RUN if [ -n "$LLAMA_CPP_COMMIT" ]; then \
+    git clone https://github.com/ggml-org/llama.cpp.git . \
+    && git checkout "$LLAMA_CPP_COMMIT"; \
+    else \
+    git clone --depth 1 https://github.com/ggml-org/llama.cpp.git .; \
+    fi \
     && echo "Building llama.cpp commit: $(git log -1 --format='%H')" \
     && cmake -B build \
     -DGGML_NATIVE=OFF \
