@@ -31,11 +31,11 @@ jobs:
     strategy:
       matrix:
         include:
-          - tag: latest-intel
+          - tag: intel
             fp16: "OFF"
-          - tag: latest-intel-fp16
+          - tag: intel-fp16
             fp16: "ON"
-          - tag: latest-intel-arl-fp16
+          - tag: intel-arl-fp16
             fp16: "ON"
             device_arch: "arl_h"
 
@@ -61,11 +61,11 @@ jobs:
         run: |
           if [ -n "$COMMIT_INPUT" ]; then
             COMMIT="$COMMIT_INPUT"
-            TAG="${COMMIT:0:7}-${MATRIX_TAG#latest-}"
+            TAG="${COMMIT:0:7}-${MATRIX_TAG}"
             echo "Pinned build: commit=$COMMIT tag=$TAG"
           else
             COMMIT=""
-            TAG="$MATRIX_TAG"
+            TAG="latest-${MATRIX_TAG}"
             echo "Latest build: tag=$TAG (shallow HEAD)"
           fi
           echo "commit=$COMMIT" >> "$GITHUB_OUTPUT"
