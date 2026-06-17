@@ -7,10 +7,9 @@ on:
     paths:
       - '.github/workflows/build-intel.yml'
       - 'intel.Dockerfile'
-  # Schedule temporarily disabled
-  #schedule:
+  schedule:
     # Weekly refresh of the base layer
-    #- cron: '0 4 * * 0'
+    - cron: '0 4 * * 0'
   workflow_dispatch:
     inputs:
       commit:
@@ -78,10 +77,11 @@ jobs:
           file: ./intel.Dockerfile 
           push: true
           tags: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ steps.cfg.outputs.tag }}
-          # Caches temporarily disabled
-          #no-cache-filters: ${{ github.event_name == 'schedule' && 'base' || '' }}
-          #cache-from: type=gha,scope=${{ matrix.tag }}
-          #cache-to: type=gha,mode=max,scope=${{ matrix.tag }}
+          # On the weekly schedule, ignore cache for the base stage so it refreshes
+          no-cache-filters: ${{ github.event_name == 'schedule' && 'base' || '' }}
+          # Cache only for latest builds; a pinned commit builds fully cold (no import/export)
+          cache-from: ${{ steps.cfg.outputs.commit == '' && format('type=gha,scope={0}', matrix.tag) || '' }}
+          cache-to: ${{ steps.cfg.outputs.commit == '' && format('type=gha,mode=max,scope={0}', matrix.tag) || '' }}
           build-args: |
             LLAMA_CPP_COMMIT=${{ steps.cfg.outputs.commit }}
             GGML_SYCL_F16=${{ matrix.fp16 }}
