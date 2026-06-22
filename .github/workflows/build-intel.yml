@@ -61,14 +61,17 @@ jobs:
           if [ -n "$COMMIT_INPUT" ]; then
             COMMIT="$COMMIT_INPUT"
             TAG="${COMMIT:0:7}-${MATRIX_TAG}"
+            PINNED=true
             echo "Pinned build: commit=$COMMIT tag=$TAG"
           else
-            COMMIT=""
+            COMMIT=$(git ls-remote https://github.com/ggml-org/llama.cpp.git HEAD | cut -f1)
             TAG="latest-${MATRIX_TAG}"
-            echo "Latest build: tag=$TAG (shallow HEAD)"
+            PINNED=false
+            echo "Latest build: commit=$COMMIT tag=$TAG"
           fi
           echo "commit=$COMMIT" >> "$GITHUB_OUTPUT"
           echo "tag=$TAG" >> "$GITHUB_OUTPUT"
+          echo "pinned=$PINNED" >> "$GITHUB_OUTPUT"
 
       - name: Build and push Docker image
         uses: docker/build-push-action@v5
@@ -80,8 +83,8 @@ jobs:
           # On the weekly schedule, ignore cache for the base stage so it refreshes
           no-cache-filters: ${{ github.event_name == 'schedule' && 'base' || '' }}
           # Cache only for latest builds; a pinned commit builds fully cold (no import/export)
-          cache-from: ${{ steps.cfg.outputs.commit == '' && format('type=gha,scope={0}', matrix.tag) || '' }}
-          cache-to: ${{ steps.cfg.outputs.commit == '' && format('type=gha,mode=max,scope={0}', matrix.tag) || '' }}
+          cache-from: ${{ steps.cfg.outputs.pinned == 'false' && format('type=gha,scope={0}', matrix.tag) || '' }}
+          cache-to: ${{ steps.cfg.outputs.pinned == 'false' && format('type=gha,mode=max,scope={0}', matrix.tag) || '' }}
           build-args: |
             LLAMA_CPP_COMMIT=${{ steps.cfg.outputs.commit }}
             GGML_SYCL_F16=${{ matrix.fp16 }}
