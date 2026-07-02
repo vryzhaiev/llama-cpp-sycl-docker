@@ -11,6 +11,11 @@ on:
     # Weekly refresh of the base and runner stages
     - cron: '0 4 * * 0'
   workflow_dispatch:
+    inputs:
+      commit:
+        description: 'Full llama.cpp commit SHA to build (empty = latest master HEAD).'
+        required: false
+        default: ''
 
 env:
   REGISTRY: ghcr.io
@@ -37,12 +42,25 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
-      - name: Get latest llama.cpp commit
-        id: llama-commit
+      - name: Resolve build config
+        id: cfg
+        env:
+          COMMIT_INPUT: ${{ inputs.commit }}
         run: |
-          COMMIT=$(git ls-remote https://github.com/ggml-org/llama.cpp.git HEAD | cut -f1)
-          echo "commit=$COMMIT" >> $GITHUB_OUTPUT
-          echo "Latest llama.cpp commit: $COMMIT"
+          if [ -n "$COMMIT_INPUT" ]; then
+            COMMIT="$COMMIT_INPUT"
+            TAG="${COMMIT:0:7}-vulkan"
+            PINNED=true
+            echo "Pinned build: commit=$COMMIT tag=$TAG"
+          else
+            COMMIT=$(git ls-remote https://github.com/ggml-org/llama.cpp.git HEAD | cut -f1)
+            TAG="latest-vulkan"
+            PINNED=false
+            echo "Latest build: commit=$COMMIT tag=$TAG"
+          fi
+          echo "commit=$COMMIT" >> "$GITHUB_OUTPUT"
+          echo "tag=$TAG" >> "$GITHUB_OUTPUT"
+          echo "pinned=$PINNED" >> "$GITHUB_OUTPUT"
 
       - name: Build and push Docker image
         uses: docker/build-push-action@v5
@@ -50,10 +68,11 @@ jobs:
           context: .
           file: ./vulkan.Dockerfile
           push: true
-          tags: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest-vulkan
-          # On the weekly schedule, ignore cache for the base and runner stages
+          tags: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ steps.cfg.outputs.tag }}
+          # On the weekly schedule, ignore cache for the base and runner stages so they refresh
           no-cache-filters: ${{ github.event_name == 'schedule' && 'base,runner' || '' }}
-          cache-from: type=gha,scope=vulkan
-          cache-to: type=gha,mode=min,scope=vulkan
+          # Cache only for latest builds; a pinned commit builds fully cold (no import/export)
+          cache-from: ${{ steps.cfg.outputs.pinned == 'false' && 'type=gha,scope=vulkan' || '' }}
+          cache-to: ${{ steps.cfg.outputs.pinned == 'false' && 'type=gha,mode=min,scope=vulkan' || '' }}
           build-args: |
-            LLAMA_CPP_COMMIT=${{ steps.llama-commit.outputs.commit }}
+            LLAMA_CPP_COMMIT=${{ steps.cfg.outputs.commit }}
