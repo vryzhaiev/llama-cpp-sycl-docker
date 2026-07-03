@@ -143,7 +143,11 @@ docker build -f intel.Dockerfile \
 ```
 
 Argless local builds fetch `HEAD` (the `${LLAMA_CPP_COMMIT:-HEAD}` fallback), so `docker build`
-works without any build-args.
+works without any build-args — but the clone layer's cache key is then constant, so rebuilds reuse
+the cached clone and won't pick up new upstream commits. Pass `--build-arg LLAMA_CPP_COMMIT=<sha>`
+(or `--no-cache`) to refresh. CI sidesteps this by resolving the current HEAD via `git ls-remote`
+and passing it as `LLAMA_CPP_COMMIT`, so the value — and thus the layer's cache key — changes when
+upstream advances.
 
 ## Conventions when extending
 

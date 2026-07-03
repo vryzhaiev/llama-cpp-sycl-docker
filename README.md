@@ -129,7 +129,24 @@ for tuning or troubleshooting.
 See the [SYCL backend docs](https://github.com/ggml-org/llama.cpp/blob/master/docs/backend/SYCL.md#runtime)
 for the complete list.
 
-## Building for a specific Intel GPU (AOT)
+## Building locally
+
+You can build any variant directly from the Dockerfiles rather than pulling a published image:
+
+```sh
+docker build -f intel.Dockerfile -t llama.cpp:intel .    # generic Intel (SYCL)
+docker build -f vulkan.Dockerfile -t llama.cpp:vulkan .  # Vulkan
+```
+
+Build options are passed with `--build-arg` — for example `GGML_SYCL_F16=ON` to enable FP16.
+
+> **Freshness:** a local build fetches `master` HEAD on the first run, then reuses the cached clone
+> on rebuilds — so it won't pick up new upstream commits on its own. Use `--no-cache` to rebuild
+> against the latest HEAD; alternatively, pass `--build-arg LLAMA_CPP_COMMIT=<sha>` to build a
+> specific commit. The published images avoid this: CI resolves the current HEAD and passes it on
+> every build.
+
+### Building for a specific Intel GPU (AOT)
 
 The `latest-intel-arl-fp16` image is compiled ahead-of-time (AOT) for Arrow Lake-H, which skips
 runtime kernel compilation and can improve performance on that hardware. To build an image tuned
