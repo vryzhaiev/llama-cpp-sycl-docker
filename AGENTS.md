@@ -58,16 +58,18 @@ than `base`.
 
 | Arg | Default | Effect |
 |---|---|---|
-| `ONEAPI_VERSION` | `2026.0` | Base image tag + oneDNN version + `CMAKE_PREFIX_PATH` |
+| `ONEAPI_VERSION` | `2026.1` | Base image tag (oneAPI toolkit version) |
+| `DNNL_VERSION` | `2026.0` | oneDNN package version + install path (`CMAKE_PREFIX_PATH` and runtime `LD_LIBRARY_PATH`) — distinct from `ONEAPI_VERSION` because oneAPI 2026.1 ships DNNL 2026.0 |
 | `BASE_IMAGE_PATCH_VERSION` | `0` | Base image patch component |
-| `UBUNTU_VERSION` | `24.04` | Base image Ubuntu component |
+| `UBUNTU_VERSION` | `26.04` | Base image Ubuntu component |
 | `NODE_VERSION` | `26` | NodeSource Node.js major version (must be ≥20 for the web UI) |
 | `LLAMA_CPP_COMMIT` | *(empty)* | Commit to build; empty ⇒ fetch `HEAD`. Also the clone-layer cache key. |
 | `GGML_SYCL_F16` | `OFF` | `-DGGML_SYCL_F16` |
 | `GGML_SYCL_DEVICE_ARCH` | *(empty)* | When set, adds `-DGGML_SYCL_DEVICE_ARCH=<arch>` (AOT); when empty the flag is omitted entirely |
 
-`ONEAPI_VERSION` is a global ARG re-declared in each stage that uses it (Docker requires the
-re-declaration for it to be visible in `RUN`/`ENV` after `FROM`).
+`DNNL_VERSION` is a global ARG re-declared in each stage that uses it (Docker requires the
+re-declaration for it to be visible in `RUN`/`ENV` after `FROM`). `ONEAPI_VERSION` appears only in
+the base-image `FROM` tag, so it needs no re-declaration.
 
 Vulkan's Dockerfile takes a subset: `LLAMA_CPP_COMMIT` and `NODE_VERSION` (same meaning; its base
 is `ubuntu:resolute`, not parametrized).

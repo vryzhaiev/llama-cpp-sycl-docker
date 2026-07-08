@@ -1,10 +1,11 @@
-ARG ONEAPI_VERSION=2026.0
+ARG ONEAPI_VERSION=2026.1
+ARG DNNL_VERSION=2026.0
 ARG BASE_IMAGE_PATCH_VERSION=0
-ARG UBUNTU_VERSION=24.04
+ARG UBUNTU_VERSION=26.04
 
 FROM intel/deep-learning-essentials:${ONEAPI_VERSION}.${BASE_IMAGE_PATCH_VERSION}-devel-ubuntu${UBUNTU_VERSION} AS base
 
-ARG ONEAPI_VERSION
+ARG DNNL_VERSION
 
 # Update Level Zero and OpenCL to latest, install dependencies
 RUN apt-get update \
@@ -14,12 +15,12 @@ RUN apt-get update \
     libze-intel-gpu1 \
     intel-opencl-icd \
     intel-ocloc \
-    intel-oneapi-dnnl-devel-${ONEAPI_VERSION} \
+    intel-oneapi-dnnl-devel-${DNNL_VERSION} \
     && rm -rf /var/lib/apt/lists/*
 
 FROM base AS builder
 
-ARG ONEAPI_VERSION
+ARG DNNL_VERSION
 ARG NODE_VERSION="26"
 
 # Node.js 20+ is required to build the web UI from source
@@ -64,15 +65,15 @@ RUN git init -q . \
     -DLLAMA_BUILD_TESTS=OFF \
     -DCMAKE_C_COMPILER=icx \
     -DCMAKE_CXX_COMPILER=icpx \
-    -DCMAKE_PREFIX_PATH=/opt/intel/oneapi/dnnl/${ONEAPI_VERSION} \
+    -DCMAKE_PREFIX_PATH=/opt/intel/oneapi/dnnl/${DNNL_VERSION} \
     && cmake --build build --config Release -j $(nproc)
 
 FROM base AS runner
 
-ARG ONEAPI_VERSION
+ARG DNNL_VERSION
 
 # Make libdnnl.so discoverable at runtime
-ENV LD_LIBRARY_PATH=/opt/intel/oneapi/dnnl/${ONEAPI_VERSION}/lib:${LD_LIBRARY_PATH}
+ENV LD_LIBRARY_PATH=/opt/intel/oneapi/dnnl/${DNNL_VERSION}/lib:${LD_LIBRARY_PATH}
 
 WORKDIR /app
 
