@@ -7,10 +7,13 @@ FROM intel/deep-learning-essentials:${ONEAPI_VERSION}.${BASE_IMAGE_PATCH_VERSION
 
 ARG DNNL_VERSION
 
-# Upgrade preinstalled packages; install the offline compiler and oneDNN
+# Update the Level Zero / OpenCL driver stack to latest; install the offline compiler and oneDNN
 RUN apt-get update \
-    && apt-get upgrade -y \
-    && apt-get install --no-install-recommends -y \
+    && apt-get install --upgrade --no-install-recommends -y \
+    libze1 \
+    libze-dev \
+    libze-intel-gpu1 \
+    intel-opencl-icd \
     intel-ocloc \
     intel-oneapi-dnnl-devel-${DNNL_VERSION} \
     && rm -rf /var/lib/apt/lists/*
