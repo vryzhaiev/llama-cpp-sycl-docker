@@ -7,13 +7,10 @@ FROM intel/deep-learning-essentials:${ONEAPI_VERSION}.${BASE_IMAGE_PATCH_VERSION
 
 ARG DNNL_VERSION
 
-# Update Level Zero and OpenCL to latest, install dependencies
+# Upgrade preinstalled packages; install the offline compiler and oneDNN
 RUN apt-get update \
-    && apt-get install --upgrade --no-install-recommends -y \
-    libze1 \
-    libze-dev \
-    libze-intel-gpu1 \
-    intel-opencl-icd \
+    && apt-get upgrade -y \
+    && apt-get install --no-install-recommends -y \
     intel-ocloc \
     intel-oneapi-dnnl-devel-${DNNL_VERSION} \
     && rm -rf /var/lib/apt/lists/*
@@ -48,7 +45,7 @@ ARG GGML_SYCL_F16=OFF
 # https://github.com/intel/llvm/blob/sycl/sycl/doc/design/OffloadDesign.md#--offload-arch
 ARG GGML_SYCL_DEVICE_ARCH=
 
-# Build with SYCL Graph support (disabled at runtime by default, enable with GGML_SYCL_DISABLE_GRAPH=0)
+# Fetch, configure and build
 RUN git init -q . \
     && git remote add origin https://github.com/ggml-org/llama.cpp.git \
     && git fetch --depth 1 origin "${LLAMA_CPP_COMMIT:-HEAD}" \
@@ -59,7 +56,6 @@ RUN git init -q . \
     -DGGML_SYCL=ON \
     -DGGML_SYCL_F16=${GGML_SYCL_F16} \
     ${GGML_SYCL_DEVICE_ARCH:+-DGGML_SYCL_DEVICE_ARCH=${GGML_SYCL_DEVICE_ARCH}} \
-    -DGGML_SYCL_GRAPH=ON \
     -DGGML_BACKEND_DL=ON \
     -DGGML_CPU_ALL_VARIANTS=ON \
     -DLLAMA_BUILD_TESTS=OFF \

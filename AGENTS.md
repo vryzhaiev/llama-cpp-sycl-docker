@@ -98,7 +98,7 @@ These are non-obvious and easy to break:
 - **oneDNN is enabled by default** (`GGML_SYCL_DNN` auto-on once `find_package(DNNL)` succeeds via
   `CMAKE_PREFIX_PATH`) and accelerates the float matmul (GEMM) path. Its actual benefit depends on
   the GPU and the current state of the SYCL backend and can vary widely — benchmark before relying
-  on it. Disable at runtime with `GGML_SYCL_DISABLE_DNN=1`. `libdnnl.so` is a `NEEDED` dependency
+  on it. Disable at runtime with `GGML_SYCL_ENABLE_DNN=0`. `libdnnl.so` is a `NEEDED` dependency
   of `libggml-sycl.so` (not `llama-server`) — check linkage with `ldd /app/libggml-sycl.so | grep dnnl`,
   not `ldd /app/llama-server`.
 - **`GGML_BACKEND_DL=ON`** means backends are separate `dlopen`'d modules (`libggml-sycl.so`),

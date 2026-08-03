@@ -119,14 +119,14 @@ for tuning or troubleshooting.
 | Env var | Default | Effect |
 |---|---|---|
 | `ONEAPI_DEVICE_SELECTOR` | auto | Pick the device/backend, e.g. `level_zero:0` for the first Level Zero GPU |
-| `GGML_SYCL_DISABLE_DNN` | `0` | Set `1` to disable the oneDNN matmul path (enabled by default; its performance impact varies by hardware and workload) |
+| `GGML_SYCL_ENABLE_DNN` | `1` | Set `0` to disable the oneDNN matmul path (enabled by default; its performance impact varies by hardware and workload) |
 | `GGML_SYCL_ENABLE_FLASH_ATTN` | `1` | Set `0` to disable Flash Attention |
-| `GGML_SYCL_DISABLE_OPT` | `0` | Set `1` to disable Intel GPU optimizations (troubleshooting; also recommended for Intel devices older than Gen 10) |
+| `GGML_SYCL_ENABLE_OPT` | `1` | Set `0` to disable Intel GPU optimizations (troubleshooting; also recommended for Intel GPUs older than Gen 10) |
 | `ZES_ENABLE_SYSMAN` | `0` | Set `1` to let the server report free GPU memory |
-| `GGML_SYCL_DISABLE_GRAPH` | `1` | Set `0` to enable SYCL Graph — though it likely gives no benefit yet |
+| `GGML_SYCL_ENABLE_GRAPH` | `0` | Set `1` to enable SYCL Graph — though it likely gives no benefit yet |
 | `GGML_SYCL_DEBUG` | `0` | Set `1` for verbose SYCL logging (troubleshooting) |
 
-See the [SYCL backend docs](https://github.com/ggml-org/llama.cpp/blob/master/docs/backend/SYCL.md#runtime)
+See the [SYCL backend docs](https://github.com/ggml-org/llama.cpp/blob/master/docs/backend/SYCL.md#environment-variable)
 for the complete list.
 
 ## Building locally
