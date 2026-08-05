@@ -22,14 +22,14 @@ Images: **`ghcr.io/vryzhaiev/llama.cpp`**
 
 | Tag | Backend | Best for |
 |---|---|---|
-| `latest-intel` | Intel GPU (SYCL) | Any Intel GPU |
-| `latest-intel-fp16` | Intel GPU (SYCL) | Any Intel GPU, FP16-capable — usually faster |
-| `latest-intel-arl-fp16` | Intel GPU (SYCL) | **Arrow Lake-H** iGPUs, tuned specifically for that hardware |
+| `latest-intel` | Intel GPU (SYCL) | Any Intel GPU (FP16) |
+| `latest-intel-arlh` | Intel GPU (SYCL) | **Arrow Lake-H** iGPUs — AOT-compiled, FP16 |
+| `latest-intel-fp32` | Intel GPU (SYCL) | Intel GPUs without usable FP16 (built on demand) |
 | `latest-vulkan` | Vulkan | Non-Intel or mixed GPUs (AMD, NVIDIA, …) |
 
-Not sure? Start with **`latest-intel-fp16`** on an Intel GPU, or **`latest-vulkan`** elsewhere.
-The `arl-fp16` image is compiled ahead-of-time for Arrow Lake-H — prefer the generic `intel`
-tags on other Intel GPUs.
+Not sure? Start with **`latest-intel`** on an Intel GPU, or **`latest-vulkan`** elsewhere.
+`latest-intel-arlh` is compiled ahead-of-time for Arrow Lake-H — prefer the generic `latest-intel`
+on other Intel GPUs. Reach for `latest-intel-fp32` only if your GPU lacks usable FP16.
 
 ## Quick start
 
@@ -40,7 +40,7 @@ docker run --rm -it \
   --device /dev/dri:/dev/dri \
   -v /path/to/models:/models \
   -p 8080:8080 \
-  ghcr.io/vryzhaiev/llama.cpp:latest-intel-fp16 \
+  ghcr.io/vryzhaiev/llama.cpp:latest-intel \
   -m /models/your-model.gguf -ngl 99 --host 0.0.0.0 --port 8080
 ```
 
@@ -60,7 +60,7 @@ docker run --rm -it \
 ```yaml
 services:
   llama:
-    image: ghcr.io/vryzhaiev/llama.cpp:latest-intel-fp16
+    image: ghcr.io/vryzhaiev/llama.cpp:latest-intel
     devices:
       - /dev/dri:/dev/dri
     volumes:
@@ -148,13 +148,12 @@ Build options are passed with `--build-arg` — for example `GGML_SYCL_F16=ON` t
 
 ### Building for a specific Intel GPU (AOT)
 
-The `latest-intel-arl-fp16` image is compiled ahead-of-time (AOT) for Arrow Lake-H, which skips
+The `latest-intel-arlh` image is compiled ahead-of-time (AOT) for Arrow Lake-H, which skips
 runtime kernel compilation and can improve performance on that hardware. To build an image tuned
-for a different Intel architecture, pass `GGML_SYCL_DEVICE_ARCH` (usually together with FP16):
+for a different Intel architecture, pass `GGML_SYCL_DEVICE_ARCH` (FP16 is on by default):
 
 ```sh
 docker build -f intel.Dockerfile \
-  --build-arg GGML_SYCL_F16=ON \
   --build-arg GGML_SYCL_DEVICE_ARCH=arl_h \
   -t llama.cpp:intel-aot .
 ```

@@ -27,13 +27,15 @@ Published tags on `ghcr.io/vryzhaiev/llama.cpp`:
 
 | Tag | Backend | FP16 | AOT arch | Notes |
 |---|---|---|---|---|
-| `latest-intel` | SYCL | off | — | Generic Intel GPU (JIT) |
-| `latest-intel-fp16` | SYCL | on | — | Generic Intel GPU, FP16 |
-| `latest-intel-arl-fp16` | SYCL | on | `arl_h` | AOT-compiled for Arrow Lake-H iGPUs |
+| `latest-intel` | SYCL | on | — | Generic Intel GPU (JIT) |
+| `latest-intel-arlh` | SYCL | on | `arl_h` | AOT-compiled for Arrow Lake-H iGPUs |
+| `latest-intel-fp32` | SYCL | off | — | FP32, built on demand via the `fp32` dispatch input |
 | `latest-vulkan` | Vulkan | — | — | Cross-vendor |
 
-Manually-dispatched **pinned** builds replace the `latest-` prefix with the 7-char commit SHA:
-`<short7-sha>-intel[-fp16|-arl-fp16]` and `<short7-sha>-vulkan`.
+`latest-intel` and `latest-intel-arlh` are the automatic (push/schedule) builds. Everything else is
+dispatch-only. The tag suffix is `intel[-fp32][-<arch>]`, where `<arch>` is the AOT `device_arch`
+with underscores stripped (`arl_h` → `arlh`); e.g. an FP32 AOT build is `latest-intel-fp32-arlh`.
+**Pinned** builds replace `latest-` with the 7-char commit SHA (e.g. `<short7-sha>-intel`).
 
 ## Intel Dockerfile architecture
 
@@ -64,7 +66,7 @@ than `base`.
 | `UBUNTU_VERSION` | `26.04` | Base image Ubuntu component |
 | `NODE_VERSION` | `26` | NodeSource Node.js major version (must be ≥20 for the web UI) |
 | `LLAMA_CPP_COMMIT` | *(empty)* | Commit to build; empty ⇒ fetch `HEAD`. Also the clone-layer cache key. |
-| `GGML_SYCL_F16` | `OFF` | `-DGGML_SYCL_F16` |
+| `GGML_SYCL_F16` | `ON` | `-DGGML_SYCL_F16`; pass `OFF` for an FP32 build |
 | `GGML_SYCL_DEVICE_ARCH` | *(empty)* | When set, adds `-DGGML_SYCL_DEVICE_ARCH=<arch>` (AOT); when empty the flag is omitted entirely |
 
 `DNNL_VERSION` is a global ARG re-declared in each stage that uses it (Docker requires the
@@ -94,7 +96,7 @@ These are non-obvious and easy to break:
   every kernel to native `arl_h` ISA at build time (~2–4× the JIT build time, dominated by a
   serial device-image link), but yields better codegen than runtime JIT (fuller optimization,
   spill reduction) — measurable TG *and* startup gains on Arrow Lake-H. The `arl-fp16` image is
-  specialized for that arch; use the generic `intel`/`intel-fp16` tags for other Intel GPUs.
+  specialized for that arch; use the generic `latest-intel` tag for other Intel GPUs.
 - **oneDNN is enabled by default** (`GGML_SYCL_DNN` auto-on once `find_package(DNNL)` succeeds via
   `CMAKE_PREFIX_PATH`) and accelerates the float matmul (GEMM) path. Its actual benefit depends on
   the GPU and the current state of the SYCL backend and can vary widely — benchmark before relying
@@ -110,13 +112,20 @@ Both workflows publish to GHCR and trigger on: push (path-filtered to the releva
 workflow), a weekly `schedule` (Sun 04:00 UTC), and `workflow_dispatch`.
 
 Intel workflow specifics:
-- **Matrix** carries the bare suffix (`intel`, `intel-fp16`, `intel-arl-fp16`); the `Resolve
-  build config` step prepends `latest-` (or `<short-sha>-` for pinned) to form the tag.
-- **`commit` dispatch input** — empty builds latest HEAD; a SHA builds that commit, tags it
-  `<short7>-<suffix>`, and runs **fully cacheless** (no import/export) so it can't pollute the
-  latest cache. Distinguished by the `pinned` output of the resolve step.
-- **Cache:** `type=gha`, `scope=<matrix.tag>`, `mode=max`, latest builds only. The weekly run
-  adds `no-cache-filters: base` so the driver/oneDNN layer refreshes.
+- **Matrix** is an inline `fromJSON` keyed off the event: `push`/`schedule` build two FP16 jobs
+  (`device_arch: ""` JIT + `arl_h` AOT); `workflow_dispatch` builds a single job. All precision/arch
+  logic lives in the `Resolve build config` step (bash), which is where it must — GHA expressions
+  have no string-replace, so the `arl_h → arlh` tag transform (`${DEVICE_ARCH//_/}`) needs a shell.
+- **`Resolve build config` step** is the single source of truth. For dispatch it reads the inputs
+  (`fp32` → `GGML_SYCL_F16`, `arch` → `device_arch`); for push/schedule it takes `device_arch` from
+  the matrix and forces FP16. It builds the tag suffix `intel[-fp32][-<arch>]`, prepends `latest-`
+  or `<short-sha>-`, and outputs `commit`/`tag`/`scope`/`fp16`/`device_arch`/`pinned`. The build
+  step reads `fp16`/`device_arch` from these outputs, not the matrix.
+- **Dispatch inputs:** `commit` (empty = HEAD; a SHA pins + runs cacheless so it can't pollute the
+  shared scope), `arch` (empty = JIT, else AOT for that arch), `fp32` (boolean, FP16 off).
+- **Cache:** `type=gha`, `mode=max`, `scope=<suffix>`, enabled only when
+  `fp16 == ON && pinned == false` — so automatic *and* manual FP16 HEAD builds of a variant share
+  a scope; FP32 and pinned builds run cold. The weekly run adds `no-cache-filters: base`.
 - Known limitation: base layers are duplicated across per-tag gha scopes; if the matrix grows and
   the 10 GB Actions cache cap bites, switching to `type=registry` cache (content-addressed dedup)
   is the intended lever.
@@ -132,11 +141,10 @@ drivers live in the `runner` stage, not `base`).
 # Latest master, generic Intel
 docker build -f intel.Dockerfile -t llama.cpp:intel .
 
-# FP16 + AOT for Arrow Lake-H
+# AOT for Arrow Lake-H (FP16 is the default)
 docker build -f intel.Dockerfile \
-  --build-arg GGML_SYCL_F16=ON \
   --build-arg GGML_SYCL_DEVICE_ARCH=arl_h \
-  -t llama.cpp:intel-arl-fp16 .
+  -t llama.cpp:intel-arlh .
 
 # A specific commit
 docker build -f intel.Dockerfile \
@@ -153,9 +161,10 @@ upstream advances.
 
 ## Conventions when extending
 
-- **New Intel variant:** add a matrix entry (bare suffix + `fp16`/`device_arch`) in
-  `build-intel.yml`; the tag prefix is handled by the resolve step. No Dockerfile change needed —
-  variants are driven entirely by build-args.
+- **New *automatic* Intel variant:** add a `device_arch` entry to the push/schedule branch of the
+  inline matrix in `build-intel.yml`. **Ad-hoc variants** need no workflow change — dispatch with
+  the `arch`/`fp32` inputs. Either way the resolve step derives the tag and no Dockerfile change is
+  needed (variants are driven by build-args).
 - **Keep `builder` and `runner` deriving from `base`** so the driver/oneDNN layer stays shared and
   version-consistent.
 - **Vulkan vs Intel:** both share the source-built UI, commit pinning, and fetch-by-SHA clone.

@@ -40,8 +40,8 @@ WORKDIR /build
 # Also, busts the build layer's cache when it changes.
 ARG LLAMA_CPP_COMMIT=
 
-# FP16 support is disabled by default, can be enabled by passing GGML_SYCL_F16=ON build arg
-ARG GGML_SYCL_F16=OFF
+# FP16 is enabled by default; pass GGML_SYCL_F16=OFF to build FP32
+ARG GGML_SYCL_F16=ON
 
 # Optional AOT target arch. When empty, the flag is omitted entirely (generic/JIT build).
 # The list of supported architectures can be found in the table:

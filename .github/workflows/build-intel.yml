@@ -16,6 +16,14 @@ on:
         description: 'Full llama.cpp commit SHA to build (empty = latest master HEAD).'
         required: false
         default: ''
+      arch:
+        description: 'AOT target architecture, e.g. arl_h (empty = generic JIT build).'
+        required: false
+        default: ''
+      fp32:
+        description: 'Build FP32 instead of FP16.'
+        type: boolean
+        default: false
 
 env:
   REGISTRY: ghcr.io
@@ -29,14 +37,8 @@ jobs:
       packages: write
     strategy:
       matrix:
-        include:
-          - tag: intel
-            fp16: "OFF"
-          - tag: intel-fp16
-            fp16: "ON"
-          - tag: intel-arl-fp16
-            fp16: "ON"
-            device_arch: "arl_h"
+        # push/schedule: FP16 JIT + AOT (arl_h). workflow_dispatch: one image driven by the inputs.
+        include: ${{ github.event_name == 'workflow_dispatch' && fromJSON('[{"device_arch":""}]') || fromJSON('[{"device_arch":""},{"device_arch":"arl_h"}]') }}
 
     steps:
       - name: Checkout repository
@@ -55,22 +57,43 @@ jobs:
       - name: Resolve build config
         id: cfg
         env:
+          EVENT: ${{ github.event_name }}
           COMMIT_INPUT: ${{ inputs.commit }}
-          MATRIX_TAG: ${{ matrix.tag }}
+          ARCH_INPUT: ${{ inputs.arch }}
+          FP32_INPUT: ${{ inputs.fp32 }}
+          MATRIX_ARCH: ${{ matrix.device_arch }}
         run: |
+          # Precision + arch: from the dispatch inputs for manual runs, from the matrix otherwise.
+          if [ "$EVENT" = "workflow_dispatch" ]; then
+            if [ "$FP32_INPUT" = "true" ]; then FP16=OFF; else FP16=ON; fi
+            DEVICE_ARCH="$ARCH_INPUT"
+          else
+            FP16=ON
+            DEVICE_ARCH="$MATRIX_ARCH"
+          fi
+
+          # Tag suffix: intel[-fp32][-<arch without underscores>], e.g. arl_h -> arlh
+          SUFFIX=intel
+          if [ "$FP16" = "OFF" ]; then SUFFIX="${SUFFIX}-fp32"; fi
+          if [ -n "$DEVICE_ARCH" ]; then SUFFIX="${SUFFIX}-${DEVICE_ARCH//_/}"; fi
+
+          # Prefix: latest- for HEAD, <short-sha>- for a pinned commit
           if [ -n "$COMMIT_INPUT" ]; then
             COMMIT="$COMMIT_INPUT"
-            TAG="${COMMIT:0:7}-${MATRIX_TAG}"
+            TAG="${COMMIT:0:7}-${SUFFIX}"
             PINNED=true
-            echo "Pinned build: commit=$COMMIT tag=$TAG"
           else
             COMMIT=$(git ls-remote https://github.com/ggml-org/llama.cpp.git HEAD | cut -f1)
-            TAG="latest-${MATRIX_TAG}"
+            TAG="latest-${SUFFIX}"
             PINNED=false
-            echo "Latest build: commit=$COMMIT tag=$TAG"
           fi
+
+          echo "Build: tag=$TAG fp16=$FP16 arch=${DEVICE_ARCH:-none} pinned=$PINNED"
           echo "commit=$COMMIT" >> "$GITHUB_OUTPUT"
           echo "tag=$TAG" >> "$GITHUB_OUTPUT"
+          echo "scope=$SUFFIX" >> "$GITHUB_OUTPUT"
+          echo "fp16=$FP16" >> "$GITHUB_OUTPUT"
+          echo "device_arch=$DEVICE_ARCH" >> "$GITHUB_OUTPUT"
           echo "pinned=$PINNED" >> "$GITHUB_OUTPUT"
 
       - name: Build and push Docker image
@@ -82,10 +105,10 @@ jobs:
           tags: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ steps.cfg.outputs.tag }}
           # On the weekly schedule, ignore cache for the base stage so it refreshes
           no-cache-filters: ${{ github.event_name == 'schedule' && 'base' || '' }}
-          # Cache only for latest builds; a pinned commit builds fully cold (no import/export)
-          cache-from: ${{ steps.cfg.outputs.pinned == 'false' && format('type=gha,scope={0}', matrix.tag) || '' }}
-          cache-to: ${{ steps.cfg.outputs.pinned == 'false' && format('type=gha,mode=max,scope={0}', matrix.tag) || '' }}
+          # Cache FP16 HEAD builds only (shared per-variant scope); FP32 and pinned builds run cold
+          cache-from: ${{ steps.cfg.outputs.fp16 == 'ON' && steps.cfg.outputs.pinned == 'false' && format('type=gha,scope={0}', steps.cfg.outputs.scope) || '' }}
+          cache-to: ${{ steps.cfg.outputs.fp16 == 'ON' && steps.cfg.outputs.pinned == 'false' && format('type=gha,mode=max,scope={0}', steps.cfg.outputs.scope) || '' }}
           build-args: |
             LLAMA_CPP_COMMIT=${{ steps.cfg.outputs.commit }}
-            GGML_SYCL_F16=${{ matrix.fp16 }}
-            GGML_SYCL_DEVICE_ARCH=${{ matrix.device_arch }}
+            GGML_SYCL_F16=${{ steps.cfg.outputs.fp16 }}
+            GGML_SYCL_DEVICE_ARCH=${{ steps.cfg.outputs.device_arch }}
