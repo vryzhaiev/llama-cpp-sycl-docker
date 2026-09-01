@@ -48,6 +48,9 @@ ARG GGML_SYCL_F16=ON
 # https://github.com/intel/llvm/blob/sycl/sycl/doc/design/OffloadDesign.md#--offload-arch
 ARG GGML_SYCL_DEVICE_ARCH=
 
+# Test hypothesis
+ARG GGML_SYCL_MAX_PARALLEL_LINK_JOBS=1
+
 # Fetch, configure and build
 RUN git init -q . \
     && git remote add origin https://github.com/ggml-org/llama.cpp.git \
@@ -59,6 +62,7 @@ RUN git init -q . \
     -DGGML_SYCL=ON \
     -DGGML_SYCL_F16=${GGML_SYCL_F16} \
     ${GGML_SYCL_DEVICE_ARCH:+-DGGML_SYCL_DEVICE_ARCH=${GGML_SYCL_DEVICE_ARCH}} \
+    ${GGML_SYCL_DEVICE_ARCH:+-DGGML_SYCL_MAX_PARALLEL_LINK_JOBS=${GGML_SYCL_MAX_PARALLEL_LINK_JOBS}} \
     -DGGML_BACKEND_DL=ON \
     -DGGML_CPU_ALL_VARIANTS=ON \
     -DLLAMA_BUILD_UI=ON \
