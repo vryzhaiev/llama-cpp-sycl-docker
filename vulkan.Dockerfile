@@ -39,6 +39,7 @@ RUN git init -q . \
     -DGGML_VULKAN=ON \
     -DGGML_BACKEND_DL=ON \
     -DGGML_CPU_ALL_VARIANTS=ON \
+    -DLLAMA_BUILD_UI=ON \
     -DLLAMA_BUILD_TESTS=OFF \
     && cmake --build build --config Release -j $(nproc)
 
